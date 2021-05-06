@@ -12,10 +12,10 @@ import base64
 
 
 
-read_public_key = open("C:\\Users\\h702_1\.ssh\\id_rsa.pub", "rb").read()
+read_public_key = open("C:\\Users\\tcumi\\.ssh\\id_rsa.pub", "rb").read()
 
 
-HOST = '127.0.0.1'
+HOST = '192.168.0.103'
 PORT = 8877
 HOST_2='192.168.0.238'
 PORT_2=8886
@@ -26,7 +26,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 number="107316126"
 def decreat(dic):
-    privateKey = RSA.import_key(open("C:\\Users\\h702_1\.ssh\\id_rsa2").read())
+    privateKey = RSA.import_key(open("C:\\Users\\tcumi\\.ssh\\id_rsa2").read())
 
     cipherRSA = PKCS1_OAEP.new(privateKey)
     
