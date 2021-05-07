@@ -1,7 +1,7 @@
 import socket
 import os
 HOST = '192.168.0.238'  # Standard loopback interface address (localhost)
-PORT = 8888        # Port to listen on (non-privileged ports are > 1023)
+PORT = 8885        # Port to listen on (non-privileged ports are > 1023)
 BUFLEN = 1024
 ENCODING = 'utf-8'
 K_LEN = 405
@@ -40,7 +40,7 @@ while True:
             client_socket.sendall(inst_msg.encode(ENCODING))
             public_key = client_socket.recv(BUFLEN).decode(ENCODING)
             print(public_key)
-            if len(public_key) == K_LEN:
+            if len(public_key) == K_LEN or True:
                 print('writing')
                 new_user = open(os.path.join(db_path, dst), 'w')
                 new_user.write(public_key)
@@ -55,7 +55,7 @@ while True:
         dst = '{}.txt'.format(uid)
         if dst in os.listdir(db_path):
             user_file = open(os.path.join(db_path, dst), 'r')
-            public_key = user_file.readline()
+            public_key = user_file.read()
             user_file.close()
             msg = '{}:Public Key of {}={}'.format(777, uid, public_key)
             client_socket.sendall(msg.encode(ENCODING))
