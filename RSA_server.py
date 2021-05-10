@@ -16,7 +16,7 @@ PORT_2=8886
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 number="107316126"
-def decreat(dic):#解密
+def decrypt(dic):#解密
     privateKey = RSA.import_key(open("C:\\Users\\h702_1\.ssh\\id_rsa2").read())
 
     cipherRSA = PKCS1_OAEP.new(privateKey)
@@ -26,7 +26,7 @@ def decreat(dic):#解密
     cipherAES = AES.new(sessionKey, AES.MODE_EAX, base64.b16decode(dic["nonce"].encode('ascii')))
     data = cipherAES.decrypt_and_verify(base64.b16decode(dic["ciphertext"].encode('ascii')), base64.b16decode(dic["tag"].encode('ascii')))
     return data.decode("utf-8")
-def encryption(message):#加密
+def encrypt(message):#加密
     read_public_key = open("C:\\Users\\h702_1\.ssh\\id_rsa.pub", "rb").read()
     key =get_random_bytes(16)
     public_key= RSA.import_key(read_public_key)
@@ -64,11 +64,11 @@ while True:
     s_2.close()
     if status[0]=="200":
         message=input("對答:")
-        encryption(message)
-        s.send(encryption(message))
+        encrypt(message)
+        s.send(encrypt(message))
         indata = s.recv(1024)
         json_translate=json.loads(indata)
-        print("已收到:"+decreat(json_translate))
+        print("已收到:"+decrypt(json_translate))
         
         if len(indata) == 0: # connection closed
             s.close()
