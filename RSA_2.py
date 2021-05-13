@@ -17,6 +17,9 @@ receiverPublicKey = response[1]; # print(receiverPublicKey);
 # connect to receiver
 rsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 rsocket.connect((HOST, PORT))
+my_id="107316127"
+rsocket.send(encrypt(my_id,receiverPublicKey))
+
 while response[0] == "200":
     try:
         message = input("對答:")
