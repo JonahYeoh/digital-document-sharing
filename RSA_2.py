@@ -1,38 +1,33 @@
-import fun
 import socket
 import json
-
-HOST = '127.0.0.1'
-PORT = 8876
-HOST_2='127.0.0.1'
-PORT_2=8886
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST, PORT))
-number="107316126"#id_rsa2,id_rsa.pub
-
-while True:
+from fun import encrypt, decrypt, get_private_key
+HOST, PORT = '127.0.0.1', 8876
+HOST_2, PORT_2='127.0.0.1', 8886
+# get my own private key
+myPrivateKey = get_private_key("C:\\Users\\h702_1\.ssh\\id_rsa2")
+# get receiver's public key
+db_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+db_socket.connect((HOST_2, PORT_2))
+receiver_id = "107316126"#id_rsa2,id_rsa.pub
+db_socket.send(receiver_id.encode())
+response = db_socket.recv(1024).decode()
+db_socket.close()
+response=response.split("$$$$$")
+receiverPublicKey = response[1]; # print(receiverPublicKey);
+# connect to receiver
+rsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+rsocket.connect((HOST, PORT))
+while response[0] == "200":
     try:
-        s_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s_2.connect((HOST_2, PORT_2))
-        s_2.send(number.encode())
-        server = s_2.recv(1024).decode()
-        status=server.split("$$$$$")
-        s_2.close()
-        if status[0]=="200":
-            print(status[1])
-            message=input("對答:")
-            s.send(fun.encrypt(message,status[1]))
-            indata = s.recv(1024)
-            json_translate=json.loads(indata)
-            print("已收到:"+fun.decrypt(json_translate,fun.get_private_key("C:\\Users\\h702_1\.ssh\\id_rsa2")))
-            
-            if len(indata) == 0: # connection closed
-                s.close()
-                print('server closed connection.')
-                break
-        else:
-            print("no found")
+        message = input("對答:")
+        rsocket.send(encrypt(message,receiverPublicKey))
+        indata = rsocket.recv(1024)
+        json_translate = json.loads(indata)
+        print("已收到:" + decrypt(json_translate, myPrivateKey))
+        if len(indata) == 0:
+            break
     except:
         print("error")
-    
-    #print('recv: ' + indata.decode())
+        break
+rsocket.close()
+print('Disconnected from ({}, {})'.format(HOST, PORT))

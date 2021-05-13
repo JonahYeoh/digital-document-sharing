@@ -1,40 +1,37 @@
-import fun
+from fun import get_private_key, encrypt, decrypt
 import socket
 import json
-HOST = '127.0.0.1'
-PORT = 8876
-number="107316127"#id_rsa,id_rsa_pub
-HOST_2='127.0.0.1'
-PORT_2=8886
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind((HOST, PORT))
-s.listen(5)
-
-print('server start at: %s:%s' % (HOST, PORT))
-print('wait for connection...')
+HOST, PORT = '127.0.0.1', 8876
+HOST_2, PORT_2 ='127.0.0.1', 8886
+# get my own private key
+myPrivateKey = get_private_key("C:\\Users\\h702_1\.ssh\\id_rsa")
+caller_id = "107316127" # suppose we do not know who will connect to us
+# set up server
+ssocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ssocket.bind((HOST, PORT))
+ssocket.listen(5); print('server start at: %s:%s\nWaiting for connection...' % (HOST, PORT))
 while True:
-    conn, addr = s.accept()
-    print('connected by ' + str(addr))
-    while True:
+    conn, addr = ssocket.accept()
+    print('connected by ' + str(addr)) # insert capture dialer's id at line below
+    # get caller's public key
+    db_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    db_socket.connect((HOST_2, PORT_2))
+    db_socket.send(caller_id.encode())
+    response = db_socket.recv(1024).decode()
+    db_socket.close()
+    response = response.split("$$$$$")
+    dialerPublicKey = response[1]
+    while response[0] == "200":
         try:
-            s_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s_2.connect((HOST_2, PORT_2))
-            s_2.send(number.encode())
-            server = s_2.recv(1024).decode()
-            status=server.split("$$$$$")
-            s_2.close()
-            if status[0]=="200":
-                indata = conn.recv(1024)
-                json_translate=json.loads(indata)
-                print("已收到:"+fun.decrypt(json_translate,fun.get_private_key("C:\\Users\\h702_1\.ssh\\id_rsa")))
-                if len(indata) == 0: # connection closed
-                    conn.close()
-                    print('client closed connection.')
-                    break
-                talk=input("對答:")
-                conn.send(fun.encrypt(talk,status[1]))
-                print("receive successful")
-            else:
-                print("no found")
+            indata = conn.recv(1024)
+            json_translate = json.loads(indata)
+            print("已收到:" + decrypt(json_translate, myPrivateKey))
+            if len(indata) == 0:
+                break
+            talk = input("對答:")
+            conn.send(encrypt(talk, dialerPublicKey))
         except:
             print("error")
+            break
+    conn.close()
+    print('Disconnected from {}'.format(addr))
