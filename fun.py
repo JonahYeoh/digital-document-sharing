@@ -11,49 +11,51 @@ import base64
 
 def get_private_key(route):
     read_private_key=open(route,"rb")
-    
     string=read_private_key.read()
-    print(string)
     read_private_key.close()
+    print(string)
     return string
 
-def decrypt(dic,string):#解密
-    private_key=RSA.import_key(string)
+def decrypt(dic, key):#解密
+    private_key=RSA.import_key(key)
     cipherRSA = PKCS1_OAEP.new(private_key)
-    sessionKey = cipherRSA.decrypt(base64.b16decode(dic["encSessionKey"].encode('ascii')))
+    # unpacking
+    encSessionKey = base64.b16decode(dic["encSessionKey"].encode('ascii'))
+    cipher_text = base64.b16decode(dic["ciphertext"].encode('ascii'))
+    tag = base64.b16decode(dic["tag"].encode('ascii'))
+    nonce = base64.b16decode(dic["nonce"].encode('ascii'))
+
+    sessionKey = cipherRSA.decrypt(encSessionKey)
+
+    cipherAES = AES.new(sessionKey, AES.MODE_EAX, nonce)
     
-    cipherAES = AES.new(sessionKey, AES.MODE_EAX, base64.b16decode(dic["nonce"].encode('ascii')))
-    data = cipherAES.decrypt_and_verify(base64.b16decode(dic["ciphertext"].encode('ascii')), base64.b16decode(dic["tag"].encode('ascii')))
-    return data.decode("utf-8")
-def encrypt(message,string):#加密
-    #read_public_key = open("C:\\Users\\h702_1\.ssh\\id_rsa.pub", "rb").read()
-    #print(string)
-    public_key= RSA.import_key(string)
-    cipherRSA = PKCS1_OAEP.new(public_key)
+    plain_text = cipherAES.decrypt_and_verify(cipher_text, tag)
+    return plain_text.decode("utf-8")
 
-    key =get_random_bytes(16)
-    encSessionKey = cipherRSA.encrypt(key)
-
-    cipherAES = AES.new(key, AES.MODE_EAX)
+def encrypt(message, key): # 加密
+    session_key = get_random_bytes(16)
+    cipherAES = AES.new(session_key, AES.MODE_EAX)
     nonce = cipherAES.nonce
-    b = bytes(message, 'utf-8')
+    byte_string = bytes(message, 'utf-8')
+    ciphertext, tag = cipherAES.encrypt_and_digest(byte_string)
 
+    b16_nonce = base64.b16encode(nonce)
+    b16_ciphertext = base64.b16encode(ciphertext)
+    b16_tag = base64.b16encode(tag)
 
-    ciphertext, tag = cipherAES.encrypt_and_digest(b)
-    
-    b16_nonce=base64.b16encode(nonce)
+    rsa_key = RSA.import_key(key)
+    cipherRSA = PKCS1_OAEP.new(rsa_key)
+    encSessionKey = cipherRSA.encrypt(session_key)
     b16_encSessionKey = base64.b16encode(encSessionKey)
-    b16_tag=base64.b16encode(tag)
-    b16_ciphertext=base64.b16encode(ciphertext)
 
-    str16_nonce= b16_nonce.decode('ascii')
+    str16_nonce = b16_nonce.decode('ascii')
+    str16_ciphertext = b16_ciphertext.decode('ascii')
+    str16_tag = b16_tag.decode('ascii')
     str16_encSessionKey = b16_encSessionKey.decode('ascii')
-    str16_tag=b16_tag.decode('ascii')
-    str16_ciphertext=b16_ciphertext.decode('ascii')
-    
-    secret={"encSessionKey":str16_encSessionKey,"tag":str16_tag,"ciphertext":str16_ciphertext,"nonce":str16_nonce}
-    json_secret=json.dumps(secret)
-    #print(json_secret)
-    outdata = json_secret
-    print(outdata)
-    return outdata.encode()
+    # packing
+    secret = {"encSessionKey" : str16_encSessionKey,
+            "tag" : str16_tag,
+            "ciphertext" : str16_ciphertext,
+            "nonce" : str16_nonce}
+    cipher_text = json.dumps(secret)
+    return cipher_text.encode()
